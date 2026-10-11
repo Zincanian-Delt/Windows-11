@@ -1,18 +1,17 @@
 name: Windows Virtual Machine (Tailscale RDP)
 
 on:
-  workflow_dispatch: # Esto permite que enciendas la máquina manualmente con un botón
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: windows-latest # Usa la infraestructura de Windows oficial de GitHub
-    timeout-minutes: 360     # Límite máximo de 6 horas permitido por GitHub
+    runs-on: windows-latest
+    timeout-minutes: 360
 
     steps:
-      - name: Descargar e Instalar Tailscale en la VM
+      - name: Descargar e Instalar Tailscale en la VM (Método Seguro)
         run: |
-          Invoke-WebRequest -Uri "https://tailscale.com" -OutFile "tailscale-setup.exe"
-          Start-Process -FilePath ".\tailscale-setup.exe" -ArgumentList "/qn" -Wait
+          choco install tailscale -y
 
       - name: Conectar la VM a tu red de Tailscale
         run: |
@@ -31,5 +30,5 @@ jobs:
         run: |
           Write-Host "¡Tu máquina virtual está lista para usarse!"
           Write-Host "Busca la IP 100.X.X.X de esta máquina en tu app de Tailscale y conéctate."
-          Start-Sleep -Seconds 21600 # Mantiene el proceso vivo por 6 horas antes de cerrarse
+          Start-Sleep -Seconds 21600
           
