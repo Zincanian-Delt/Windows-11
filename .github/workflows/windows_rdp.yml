@@ -1,0 +1,35 @@
+name: Windows Virtual Machine (Tailscale RDP)
+
+on:
+  workflow_dispatch: # Esto permite que enciendas la máquina manualmente con un botón
+
+jobs:
+  build:
+    runs-on: windows-latest # Usa la infraestructura de Windows oficial de GitHub
+    timeout-minutes: 360     # Límite máximo de 6 horas permitido por GitHub
+
+    steps:
+      - name: Descargar e Instalar Tailscale en la VM
+        run: |
+          Invoke-WebRequest -Uri "https://tailscale.com" -OutFile "tailscale-setup.exe"
+          Start-Process -FilePath ".\tailscale-setup.exe" -ArgumentList "/qn" -Wait
+
+      - name: Conectar la VM a tu red de Tailscale
+        run: |
+          & "C:\Program Files\Tailscale\tailscale.exe" up --authkey=${{ secrets.TAILSCALE_AUTHKEY }} --accept-routes
+
+      - name: Configurar Usuario y Activar RDP
+        run: |
+          $Password = ConvertTo-SecureString "${{ secrets.USER_PASSWORD }}" -AsPlainText -Force
+          New-LocalUser -Name "${{ secrets.USER_NAME }}" -Password $Password -Description "RDP User"
+          Add-LocalGroupMember -Group "Remote Desktop Users" -Member "${{ secrets.USER_NAME }}"
+          Add-LocalGroupMember -Group "Administrators" -Member "${{ secrets.USER_NAME }}"
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -name "fDenyTSConnections" -Value 0
+          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+
+      - name: Mantener la máquina encendida (Loop de 6 horas)
+        run: |
+          Write-Host "¡Tu máquina virtual está lista para usarse!"
+          Write-Host "Busca la IP 100.X.X.X de esta máquina en tu app de Tailscale y conéctate."
+          Start-Sleep -Seconds 21600 # Mantiene el proceso vivo por 6 horas antes de cerrarse
+          
